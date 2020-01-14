@@ -50,12 +50,10 @@ def decrypt_message(K, iv, ciphertext, tag):
     """
     ## YOUR CODE HERE
 
-    try: 
-        aes = Cipher("aes-128-gcm")
-        plain = aes.quick_gcm_dec(K, iv, ciphertext, tag)
-    except:
-        raise Exception("error dring decryption") 
-    
+     
+    aes = Cipher("aes-128-gcm")
+    plain = aes.quick_gcm_dec(K, iv, ciphertext, tag)
+
     return plain.encode("utf8")
 
 #####################################################
