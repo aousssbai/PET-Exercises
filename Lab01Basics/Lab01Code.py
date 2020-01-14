@@ -10,7 +10,8 @@
 ###########################
 # Group Members: TODO
 ###########################
-
+from os import urandom 
+from petlib.cipher import Cipher
 
 #####################################################
 # TASK 1 -- Ensure petlib is installed on the System
@@ -36,6 +37,9 @@ def encrypt_message(K, message):
     plaintext = message.encode("utf8")
     
     ## YOUR CODE HERE
+    aes = Cipher("aes-128-gcm")
+    iv  = urandom(16)
+    ciphertext, tag = aes.quick_gcm_enc(K, iv, plaintext, assoc=None, tagl=16)
 
     return (iv, ciphertext, tag)
 
@@ -46,6 +50,12 @@ def decrypt_message(K, iv, ciphertext, tag):
     """
     ## YOUR CODE HERE
 
+    try: 
+        aes = Cipher("aes-128-gcm")
+        plain = aes.quick_gcm_dec(K, iv, ciphertext, tag)
+    except:
+        raise Exception("error dring decryption") 
+    
     return plain.encode("utf8")
 
 #####################################################
