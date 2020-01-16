@@ -12,6 +12,7 @@
 ###########################
 from os import urandom 
 from petlib.cipher import Cipher
+from petlib.bn import Bn
 
 #####################################################
 # TASK 1 -- Ensure petlib is installed on the System
@@ -84,9 +85,9 @@ def is_point_on_curve(a, b, p, x, y):
     assert isinstance(b, Bn)
     assert isinstance(p, Bn) and p > 0
     assert (isinstance(x, Bn) and isinstance(y, Bn)) \
-           or (x == None and y == None)
+           or (x is None and y is None)
 
-    if x == None and y == None:
+    if x is None and y is None:
         return True
 
     lhs = (y * y) % p
@@ -110,8 +111,22 @@ def point_add(a, b, p, x0, y0, x1, y1):
 
     # ADD YOUR CODE BELOW
     xr, yr = None, None
+    if x0 is None and y0 is None: 
+       return x1,y1
+    elif x1 is None and y1 is None: 
+       return x0,y0
+    elif x0 == x1 and y0 == y1: 
+        raise Exception("EC Points must not be equal")
+
+    try:
+        lam = ((y0 - y1) * (x0 - x1).mod_inverse(p) ).mod(p)
+        xr  = (lam*lam - x1 - x0).mod(p)
+        yr  = (lam * (x1 - xr) - y1).mod(p)
+        return (xr, yr)
+    except: 
+        return (None,None)
+
     
-    return (xr, yr)
 
 def point_double(a, b, p, x, y):
     """Define "doubling" an EC point.
