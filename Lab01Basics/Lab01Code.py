@@ -142,6 +142,16 @@ def point_double(a, b, p, x, y):
 
     # ADD YOUR CODE BELOW
     xr, yr = None, None
+    if x is None and y is None: 
+        return (None,None)
+
+    try:
+        lam = ((3 * x *x + a) * ((2 * y).mod_inverse(p)) ).mod (p)
+        xr  = (lam*lam - 2 * x).mod(p)
+        yr  = (lam * (x - xr) - y).mod (p)
+    except:
+        return(None,None)
+        
 
     return xr, yr
 
@@ -163,8 +173,9 @@ def point_scalar_multiplication_double_and_add(a, b, p, x, y, scalar):
     P = (x, y)
 
     for i in range(scalar.num_bits()):
-        pass ## ADD YOUR CODE HERE
-
+        if scalar.is_bit_set(i) == 1:
+            Q = point_add(a,b,p,Q[0],Q[1],P[0],P[1])
+	P = point_double(a,b,p,P[0],P[1])
     return Q
 
 def point_scalar_multiplication_montgomerry_ladder(a, b, p, x, y, scalar):
@@ -189,10 +200,14 @@ def point_scalar_multiplication_montgomerry_ladder(a, b, p, x, y, scalar):
     R1 = (x, y)
 
     for i in reversed(range(0,scalar.num_bits())):
-        pass ## ADD YOUR CODE HERE
+        if scalar.is_bit_set(i) == 0:
+        	R1 = point_add(a,b,p,R0[0],R0[1],R1[0],R1[1])
+        	R0 = point_double(a,b,p,R0[0],R0[1])
+        else:
+        	R0 = point_add(a,b,p,R0[0],R0[1],R1[0],R1[1])
+        	R1 = point_double(a,b,p,R1[0],R1[1])
 
     return R0
-
 
 #####################################################
 # TASK 4 -- Standard ECDSA signatures
