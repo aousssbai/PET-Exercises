@@ -234,7 +234,8 @@ def ecdsa_sign(G, priv_sign, message):
     """ Sign the SHA256 digest of the message using ECDSA and return a signature """
     plaintext =  message.encode("utf8")
 
-    ## YOUR CODE HERE
+    digest = sha256(plaintext).digest()
+    sig = do_ecdsa_sign(G, priv_sign, digest)
 
     return sig
 
@@ -243,6 +244,8 @@ def ecdsa_verify(G, pub_verify, message, sig):
     plaintext =  message.encode("utf8")
 
     ## YOUR CODE HERE
+    digest = sha256(plaintext).digest()
+    res = do_ecdsa_verify(G, pub_verify, sig, digest)
 
     return res
 
