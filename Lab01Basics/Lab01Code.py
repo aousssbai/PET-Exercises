@@ -12,7 +12,6 @@
 ###########################
 from os import urandom 
 from petlib.cipher import Cipher
-from petlib.bn import Bn
 
 #####################################################
 # TASK 1 -- Ensure petlib is installed on the System
@@ -20,6 +19,7 @@ from petlib.bn import Bn
 #           be imported.
 
 import petlib
+from petlib.bn import Bn
 
 #####################################################
 # TASK 2 -- Symmetric encryption using AES-GCM 
@@ -40,7 +40,7 @@ def encrypt_message(K, message):
     ## YOUR CODE HERE
     aes = Cipher("aes-128-gcm")
     iv  = urandom(16)
-    ciphertext, tag = aes.quick_gcm_enc(K, iv, plaintext, assoc=None, tagl=16)
+    ciphertext, tag = aes.quick_gcm_enc(K, iv, plaintext)
 
     return (iv, ciphertext, tag)
 
@@ -111,6 +111,7 @@ def point_add(a, b, p, x0, y0, x1, y1):
 
     # ADD YOUR CODE BELOW
     xr, yr = None, None
+
     if x0 is None and y0 is None: 
        return x1,y1
     elif x1 is None and y1 is None: 
@@ -126,6 +127,7 @@ def point_add(a, b, p, x0, y0, x1, y1):
     except: 
         return (None,None)
 
+    
     
 
 def point_double(a, b, p, x, y):
@@ -209,6 +211,7 @@ def point_scalar_multiplication_montgomerry_ladder(a, b, p, x, y, scalar):
 
     return R0
 
+
 #####################################################
 # TASK 4 -- Standard ECDSA signatures
 #
@@ -275,7 +278,16 @@ def dh_encrypt(pub, message, aliceSig = None):
     """
     
     ## YOUR CODE HERE
-    pass
+    G, priv_dec, pub_enc = dh_get_key()
+    freshKey = pub.pt_mul(priv_dec).export()[:16]
+
+    plaintext = message.encode("utf8")
+    iv = urandom(16)
+    aes = Cipher("aes-128-gcm")
+    ciphertext, tag = aes.quick_gcm_enc(freshKey,iv,plaintext)
+    
+    return (iv, ciphertext, tag, pub_enc)
+
 
 def dh_decrypt(priv, ciphertext, aliceVer = None):
     """ Decrypt a received message encrypted using your public key, 
@@ -283,31 +295,57 @@ def dh_decrypt(priv, ciphertext, aliceVer = None):
     the message came from Alice using her verification key."""
     
     ## YOUR CODE HERE
-    pass
+    iv, ciphertext, tag, pub_enc = ciphertext
+    freshKey = pub_enc.pt_mul(priv).export()[:16]
+    aes = Cipher("aes-128-gcm")
+    plaintext = aes.quick_gcm_dec(freshKey,iv,ciphertext,tag)
+    return plaintext.encode("utf8")
 
 ## NOTE: populate those (or more) tests
 #  ensure they run using the "py.test filename" command.
 #  What is your test coverage? Where is it missing cases?
 #  $ py.test-2.7 --cov-report html --cov Lab01Code Lab01Code.py 
 
+GTest, privTest_dec, pubTest_enc = dh_get_key()
+
 def test_encrypt():
-    assert False
+
+    message = u"Hello World!"
+    iv, ciphertext, tag, pub_enc = dh_encrypt(pubTest_enc, message)
+    assert len(iv) == 16
+    assert len(ciphertext) == len(message)
+    assert len(tag) == 16
 
 def test_decrypt():
-    assert False
+
+    message = u"Hello World!"
+    encryptedMessage = dh_encrypt(pubTest_enc, message)
+    decryptedMessage = dh_decrypt(privTest_dec, encryptedMessage)
+    assert decryptedMessage == message
 
 def test_fails():
-    assert False
+    from pytest import raises
+    from os import urandom
+    message = u"Hello World!"
+    iv, ciphertext, tag, pub_enc = dh_encrypt(pubTest_enc, message)
+    with raises(Exception) as excinfo:
+        bundle = urandom(len(iv)), ciphertext, tag, pub_enc
+        dh_decrypt(privTest_dec, bundle)
+    assert 'decryption failed' in str(excinfo.value)
 
-#####################################################
-# TASK 6 -- Time EC scalar multiplication
-#             Open Task.
-#           
-#           - Time your implementations of scalar multiplication
-#             (use time.clock() for measurements)for different 
-#              scalar sizes)
-#           - Print reports on timing dependencies on secrets.
-#           - Fix one implementation to not leak information.
+    with raises(Exception) as excinfo:
+        bundle = iv, urandom(len(ciphertext)), tag, pub_enc
+        dh_decrypt(privTest_dec, bundle)
+    assert 'decryption failed' in str(excinfo.value)
 
-def time_scalar_mul():
-    pass
+    with raises(Exception) as excinfo:
+        bundle =  iv,ciphertext, urandom(len(tag)), pub_enc
+        dh_decrypt(privTest_dec, bundle)
+    assert 'decryption failed' in str(excinfo.value)
+
+
+
+
+
+
+
