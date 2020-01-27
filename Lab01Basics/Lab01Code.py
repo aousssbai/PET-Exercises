@@ -18,6 +18,7 @@ from petlib.cipher import Cipher
 #           and also pytest. Ensure the Lab Code can 
 #           be imported.
 
+# simple pip install 
 import petlib
 from petlib.bn import Bn
 
@@ -38,8 +39,12 @@ def encrypt_message(K, message):
     plaintext = message.encode("utf8")
     
     ## YOUR CODE HERE
+    
+    # we declare the aes cipher 
     aes = Cipher("aes-128-gcm")
+    # we generate the iv
     iv  = urandom(16)
+    # we encrypt the message "plaintext" using the key K provided and the iv we generated
     ciphertext, tag = aes.quick_gcm_enc(K, iv, plaintext)
 
     return (iv, ciphertext, tag)
@@ -51,10 +56,11 @@ def decrypt_message(K, iv, ciphertext, tag):
     """
     ## YOUR CODE HERE
 
-     
+    # we declare the aes cipher
     aes = Cipher("aes-128-gcm")
+    # we decode the ciphertext 
     plain = aes.quick_gcm_dec(K, iv, ciphertext, tag)
-
+    # we return the unencrypted message
     return plain.encode("utf8")
 
 #####################################################
@@ -112,10 +118,10 @@ def point_add(a, b, p, x0, y0, x1, y1):
     # ADD YOUR CODE BELOW
     xr, yr = None, None
 
-    if x0 is None and y0 is None: 
-       return x1,y1
-    elif x1 is None and y1 is None: 
+    if x1 is None and y1 is None: 
        return x0,y0
+    elif x0 is None and y0 is None: 
+       return x1,y1
     elif x0 == x1 and y0 == y1: 
         raise Exception("EC Points must not be equal")
 
