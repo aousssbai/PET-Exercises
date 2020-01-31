@@ -118,6 +118,7 @@ def point_add(a, b, p, x0, y0, x1, y1):
     # ADD YOUR CODE BELOW
     xr, yr = None, None
 
+
     if x1 is None and y1 is None: 
        return x0,y0
     elif x0 is None and y0 is None: 
@@ -284,12 +285,13 @@ def dh_encrypt(pub, message, aliceSig = None):
     """
     
     ## YOUR CODE HERE
-    G, priv_dec, pub_enc = dh_get_key()
-    freshKey = pub.pt_mul(priv_dec).export()[:16]
-
     plaintext = message.encode("utf8")
-    iv = urandom(16)
+    G, priv_dec, pub_enc = dh_get_key()
+    #get a 16 byte string
+    freshKey = pub.pt_mul(priv_dec).export()[:16]
+    
     aes = Cipher("aes-128-gcm")
+    iv = urandom(16)
     ciphertext, tag = aes.quick_gcm_enc(freshKey,iv,plaintext)
     
     return (iv, ciphertext, tag, pub_enc)
