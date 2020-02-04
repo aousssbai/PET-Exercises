@@ -154,6 +154,7 @@ def mix_client_one_hop(public_key, address, message):
     expected_mac = h.digest()[:20]
 
     return OneHopMixMessage(client_public_key, expected_mac, address_cipher, message_cipher)
+
     
 
 #####################################################
@@ -281,6 +282,58 @@ def mix_client_n_hop(public_keys, address, message):
 
     ## ADD CODE HERE
 
+    hmacs = []
+    
+    address_cipher = address_plaintext
+    message_cipher = message_plaintext
+
+    blinding_factor = Bn(1)
+    blinded_public_keys = [public_keys[0]]
+
+    for public_key in public_keys[1:]:
+        ## First get a shared key
+        shared_element = private_key * blinded_public_keys[-1]
+        key_material = sha512(shared_element.export()).digest()
+        blinding_factor *= Bn.from_binary(key_material[48:])
+        blinded_public_keys.append(blinding_factor * public_key)
+        
+
+    # Want to encrypt message with the first mix's key on the outside - reverse our public keys for this
+    for key in reversed(blinded_public_keys):
+          ## First get a shared key
+        shared_element = private_key * key
+        key_material = sha512(shared_element.export()).digest()
+
+        # Use different parts of the shared key for different operations
+        hmac_key = key_material[:16]
+        address_key = key_material[16:32]
+        message_key = key_material[32:48]
+
+        # Build cipher on top of cipher from last mix to create message such as P1(P2(P3...(M)...))
+        address_cipher = aes_ctr_enc_dec(address_key, b"\x00"*16, address_cipher)
+        message_cipher = aes_ctr_enc_dec(message_key, b"\x00"*16, message_cipher)  
+        
+        ## Check the HMAC
+        h = Hmac(b"sha512", hmac_key)        
+
+        # Decrypt hmacs
+        new_hmacs = []
+        for i, other_mac in enumerate(hmacs):
+            # Ensure the IV is different for each hmac 
+            hmac_plaintext = aes_ctr_enc_dec(hmac_key, pack("H14s", i, b"\x00"*14), other_mac)
+            h.update(hmac_plaintext)
+            new_hmacs += [hmac_plaintext]
+
+        h.update(address_cipher)
+        h.update(message_cipher)
+        expected_mac = h.digest()[:20]
+
+        hmacs = [expected_mac] + new_hmacs
+
+
+    
+
+
     return NHopMixMessage(client_public_key, hmacs, address_cipher, message_cipher)
 
 
@@ -344,4 +397,3 @@ def analyze_trace(trace, target_number_of_friends, target=0):
 #                        the correctness of the result returned dependent on this background distribution?
 
 """ TODO: Your answer HERE """
-
