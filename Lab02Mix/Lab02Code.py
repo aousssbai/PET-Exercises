@@ -143,7 +143,7 @@ def mix_client_one_hop(public_key, address, message):
     address_key = key_material[16:32]
     message_key = key_material[32:48]
 
-    #decrypt the plaintext address and message
+    #encrypt the plaintext address and message
     address_cipher = aes_ctr_enc_dec(address_key, b'\x00'*16, address_plaintext)
     message_cipher = aes_ctr_enc_dec(message_key, b'\x00'*16, message_plaintext)
 
@@ -267,6 +267,7 @@ def mix_client_n_hop(public_keys, address, message):
 
     """
     G = EcGroup()
+    
     # assert G.check_point(public_key)
     assert isinstance(address, bytes) and len(address) <= 256
     assert isinstance(message, bytes) and len(message) <= 1000
@@ -287,20 +288,20 @@ def mix_client_n_hop(public_keys, address, message):
     address_cipher = address_plaintext
     message_cipher = message_plaintext
 
-    blinding_factor = Bn(1)
+    # we dont want tp blind the first public key
     blinded_public_keys = [public_keys[0]]
 
     for public_key in public_keys[1:]:
         ## First get a shared key
         shared_element = private_key * blinded_public_keys[-1]
         key_material = sha512(shared_element.export()).digest()
-        blinding_factor *= Bn.from_binary(key_material[48:])
+        blinding_factor = Bn.from_binary(key_material[48:])
         blinded_public_keys.append(blinding_factor * public_key)
         
 
-    # Want to encrypt message with the first mix's key on the outside - reverse our public keys for this
+    
     for key in reversed(blinded_public_keys):
-          ## First get a shared key
+          
         shared_element = private_key * key
         key_material = sha512(shared_element.export()).digest()
 
@@ -309,14 +310,13 @@ def mix_client_n_hop(public_keys, address, message):
         address_key = key_material[16:32]
         message_key = key_material[32:48]
 
-        # Build cipher on top of cipher from last mix to create message such as P1(P2(P3...(M)...))
         address_cipher = aes_ctr_enc_dec(address_key, b"\x00"*16, address_cipher)
         message_cipher = aes_ctr_enc_dec(message_key, b"\x00"*16, message_cipher)  
         
         ## Check the HMAC
         h = Hmac(b"sha512", hmac_key)        
 
-        # Decrypt hmacs
+        # implement all the hmacs
         new_hmacs = []
         for i, other_mac in enumerate(hmacs):
             # Ensure the IV is different for each hmac 
@@ -383,6 +383,22 @@ def analyze_trace(trace, target_number_of_friends, target=0):
     """
 
     ## ADD CODE HERE
+    possible_friends = dict()
+
+    for msg in trace:
+        if target in msg[0]:
+            for recipient in msg[1]:
+                if recipient in possible_friends:
+                    possible_friends[recipient] += 1
+                else:
+                    possible_friends[recipient] = 1
+
+    sorted_friends = []
+    for key, _ in sorted(possible_friends.iteritems(), key=lambda (k, v): (v, k), reverse=True):
+	sorted_friends.append(key)
+
+    return sorted_friends[:target_number_of_friends]
+
 
     return []
 
