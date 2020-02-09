@@ -1,4 +1,3 @@
-
 #####################################################
 # GA17 Privacy Enhancing Technologies -- Lab 02
 #
@@ -263,6 +262,7 @@ def mix_client_n_hop(public_keys, address, message):
     an address ciphertext (256 + 2 bytes) and a message ciphertext (1002 bytes). 
     """
     G = EcGroup()
+    blinding_factor = Bn(1)
     # assert G.check_point(public_key)
     assert isinstance(address, bytes) and len(address) <= 256
     assert isinstance(message, bytes) and len(message) <= 1000
@@ -290,7 +290,7 @@ def mix_client_n_hop(public_keys, address, message):
         ## First get a shared key
         shared_element = private_key * blinded_public_keys[-1]
         key_material = sha512(shared_element.export()).digest()
-        blinding_factor = Bn.from_binary(key_material[48:])
+        blinding_factor *= Bn.from_binary(key_material[48:])
         blinded_public_keys.append(blinding_factor * public_key)
         
     for key in reversed(blinded_public_keys):
