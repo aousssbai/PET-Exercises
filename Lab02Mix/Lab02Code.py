@@ -1,3 +1,4 @@
+
 #####################################################
 # GA17 Privacy Enhancing Technologies -- Lab 02
 #
@@ -24,7 +25,6 @@ from binascii import hexlify
 def aes_ctr_enc_dec(key, iv, input):
     """ A helper function that implements AES Counter (CTR) Mode encryption and decryption. 
     Expects a key (16 byte), and IV (16 bytes) and an input plaintext / ciphertext.
-
     If it is not obvious convince yourself that CTR encryption and decryption are in 
     fact the same operations.
     """
@@ -55,12 +55,10 @@ from petlib.cipher import Cipher
 
 def mix_server_one_hop(private_key, message_list):
     """ Implements the decoding for a simple one-hop mix. 
-
         Each message is decoded in turn:
         - A shared key is derived from the message public key and the mix private_key.
         - the hmac is checked against all encrypted parts of the message
         - the address and message are decrypted, decoded and returned
-
     """
     G = EcGroup()
 
@@ -143,7 +141,7 @@ def mix_client_one_hop(public_key, address, message):
     address_key = key_material[16:32]
     message_key = key_material[32:48]
 
-    #encrypt the plaintext address and message
+    #decrypt the plaintext address and message
     address_cipher = aes_ctr_enc_dec(address_key, b'\x00'*16, address_plaintext)
     message_cipher = aes_ctr_enc_dec(message_key, b'\x00'*16, message_plaintext)
 
@@ -175,7 +173,6 @@ def mix_server_n_hop(private_key, message_list, final=False):
     """ Decodes a NHopMixMessage message and outputs either messages destined
     to the next mix or a list of tuples (address, message) (if final=True) to be 
     sent to their final recipients.
-
     Broadly speaking the mix will process each message in turn: 
         - it derives a shared key (using its private_key), 
         - checks the first hmac,
@@ -264,10 +261,8 @@ def mix_client_n_hop(public_keys, address, message):
     The maximum size of the final address and the message are 256 bytes and 1000 bytes respectively.
     Returns an 'NHopMixMessage' with four parts: a public key, a list of hmacs (20 bytes each),
     an address ciphertext (256 + 2 bytes) and a message ciphertext (1002 bytes). 
-
     """
     G = EcGroup()
-    
     # assert G.check_point(public_key)
     assert isinstance(address, bytes) and len(address) <= 256
     assert isinstance(message, bytes) and len(message) <= 1000
@@ -288,7 +283,7 @@ def mix_client_n_hop(public_keys, address, message):
     address_cipher = address_plaintext
     message_cipher = message_plaintext
 
-    # we dont want tp blind the first public key
+    
     blinded_public_keys = [public_keys[0]]
 
     for public_key in public_keys[1:]:
@@ -298,10 +293,8 @@ def mix_client_n_hop(public_keys, address, message):
         blinding_factor = Bn.from_binary(key_material[48:])
         blinded_public_keys.append(blinding_factor * public_key)
         
-
-    
     for key in reversed(blinded_public_keys):
-          
+          ## First get a shared key
         shared_element = private_key * key
         key_material = sha512(shared_element.export()).digest()
 
@@ -316,7 +309,7 @@ def mix_client_n_hop(public_keys, address, message):
         ## Check the HMAC
         h = Hmac(b"sha512", hmac_key)        
 
-        # implement all the hmacs
+        # implement hmacs
         new_hmacs = []
         for i, other_mac in enumerate(hmacs):
             # Ensure the IV is different for each hmac 
@@ -329,10 +322,6 @@ def mix_client_n_hop(public_keys, address, message):
         expected_mac = h.digest()[:20]
 
         hmacs = [expected_mac] + new_hmacs
-
-
-    
-
 
     return NHopMixMessage(client_public_key, hmacs, address_cipher, message_cipher)
 
@@ -386,21 +375,18 @@ def analyze_trace(trace, target_number_of_friends, target=0):
     possible_friends = dict()
 
     for msg in trace:
-        if target in msg[0]:
-            for recipient in msg[1]:
-                if recipient in possible_friends:
-                    possible_friends[recipient] += 1
-                else:
-                    possible_friends[recipient] = 1
+	if target in msg[0]:
+	    for recipient in msg[1]:
+	        if recipient in possible_friends:
+	            possible_friends[recipient] += 1
+	        else:
+	            possible_friends[recipient] = 1
 
     sorted_friends = []
     for key, _ in sorted(possible_friends.iteritems(), key=lambda (k, v): (v, k), reverse=True):
 	sorted_friends.append(key)
 
     return sorted_friends[:target_number_of_friends]
-
-
-    return []
 
 ## TASK Q1 (Question 1): The mix packet format you worked on uses AES-CTR with an IV set to all zeros. 
 #                        Explain whether this is a security concern and justify your answer.
@@ -413,3 +399,6 @@ def analyze_trace(trace, target_number_of_friends, target=0):
 #                        the correctness of the result returned dependent on this background distribution?
 
 """ TODO: Your answer HERE """
+
+  
+
