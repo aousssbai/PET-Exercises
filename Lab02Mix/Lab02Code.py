@@ -375,12 +375,12 @@ def analyze_trace(trace, target_number_of_friends, target=0):
     possible_friends = {}
 
     for message in trace:
-	if target in message[0]:
-	    for receiver in message[1]:
-	        if receiver in possible_friends:
-	            possible_friends[receiver] += 1
-	        else:
-	            possible_friends[receiver] = 1
+	    if target in message[0]:
+	        for receiver in message[1]:
+	            if receiver in possible_friends:
+	                possible_friends[receiver] += 1
+	            else:
+	                possible_friends[receiver] = 1
 
     sorted_friends = []
     for key, _ in sorted(possible_friends.iteritems(), key=lambda (k, v): (v, k), reverse=True):
