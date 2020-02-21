@@ -18,6 +18,7 @@
 
 
 from petlib.ec import EcGroup
+from petlib.bn import Bn
 
 def setup():
     """Generates the Cryptosystem Parameters."""
@@ -32,6 +33,8 @@ def keyGen(params):
    (G, g, h, o) = params
    
    # ADD CODE HERE
+   priv = o.random()
+   pub = priv * g
 
    return (priv, pub)
 
@@ -41,6 +44,13 @@ def encrypt(params, pub, m):
         raise Exception("Message value to low or high.")
 
    # ADD CODE HERE
+    (G, g, h, o) = params
+
+    k = o.random()
+    kg = k * g
+    message = (k*pub) + (m*h)
+
+    c = (kg, message)
 
     return c
 
@@ -76,6 +86,9 @@ def decrypt(params, priv, ciphertext):
     a , b = ciphertext
 
    # ADD CODE HERE
+    (G, g, h, o) = params
+
+    hm = b - priv*a
 
     return logh(params, hm)
 
@@ -92,6 +105,9 @@ def add(params, pub, c1, c2):
     assert isCiphertext(params, c2)
 
    # ADD CODE HERE
+    a1,b1 = c1
+    a2,b2 = c2
+    c3 = (a1+a2, b1+b2)
 
     return c3
 
@@ -101,6 +117,8 @@ def mul(params, pub, c1, alpha):
     assert isCiphertext(params, c1)
 
    # ADD CODE HERE
+    a,b = c1
+    c3 = (alpha*a, alpha*b)
 
     return c3
 
@@ -114,6 +132,10 @@ def groupKey(params, pubKeys=[]):
     (G, g, h, o) = params
 
    # ADD CODE HERE
+    pub = pubKeys[0]
+
+    for key in pubKeys[1:]:
+        pub +=key
 
     return pub
 
@@ -123,6 +145,9 @@ def partialDecrypt(params, priv, ciphertext, final=False):
     assert isCiphertext(params, ciphertext)
     
     # ADD CODE HERE
+    a1,b = ciphertext
+      
+    b1 = b + (-priv * a1)
 
     if final:
         return logh(params, b1)
@@ -143,7 +168,12 @@ def corruptPubKey(params, priv, OtherPubKeys=[]):
     (G, g, h, o) = params
     
    # ADD CODE HERE
+    bad_pub = priv * g
 
+    for key in OtherPubKeys:
+        bad_pub -= key
+
+    pub = bad_pub
     return pub
 
 #####################################################
@@ -158,6 +188,8 @@ def encode_vote(params, pub, vote):
     assert vote in [0, 1]
 
    # ADD CODE HERE
+    v0 = encrypt(params, pub, (1-vote))
+    v1 = encrypt(params, pub, vote)
 
     return (v0, v1)
 
@@ -167,7 +199,11 @@ def process_votes(params, pub, encrypted_votes):
     assert isinstance(encrypted_votes, list)
     
    # ADD CODE HERE
+    (tv0, tv1) = encrypted_votes[0]
 
+    for (t0,t1) in encrypted_votes[1:]:
+        tv0 =  add(params, pub, t0, tv0)
+        tv1 = add(params, pub, t1, tv1)
     return tv0, tv1
 
 def simulate_poll(votes):
