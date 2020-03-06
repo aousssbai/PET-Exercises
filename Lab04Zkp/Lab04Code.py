@@ -52,6 +52,12 @@ def proveKey(params, priv, pub):
     (G, g, hs, o) = params
     
     ## YOUR CODE HERE:
+    w = o.random()
+    witness = w * g
+
+    c = to_challenge([g, witness])
+
+    r = (w - c * priv) % o
     
     return (c, r)
 
@@ -90,8 +96,23 @@ def proveCommitment(params, C, r, secrets):
     """
     (G, g, (h0, h1, h2, h3), o) = params
     x0, x1, x2, x3 = secrets
+    allSecrets = [x0,x1,x2,x3]
 
     ## YOUR CODE HERE:
+
+    w = [o.random() for i in range(5)]
+
+    W1 = w[0] * g + w[1] * h0 + w[2] * h1 + w[3] * h2 + w[4] * h3
+
+    c = to_challenge([g, h0, h1,h2,h3,W1])
+    responses = []
+
+    for i in range(4):
+        r1 = w[i+1] - (c * allSecrets[i]) % o
+        responses.append(r1)
+
+    rr = w[0] - (c * r) %o
+    responses.append(rr)
 
     return (c, responses)
 
@@ -139,8 +160,13 @@ def verifyDLEquality(params, K, L, proof):
     c, r = proof
 
     ## YOUR CODE HERE:
+    k = c*K + r*g
+    l = c*L + r*h0
 
-    return # YOUR RETURN HERE
+    c_verif = to_challenge([g, h0, k,l])
+
+
+    return  c_verif == c
 
 #####################################################
 # TASK 4 -- Prove correct encryption and knowledge of 
@@ -164,6 +190,16 @@ def proveEnc(params, pub, Ciphertext, k, m):
     a, b = Ciphertext
 
     ## YOUR CODE HERE:
+    w1 = o.random()
+    w2 = o.random()
+
+    wa = w1 * g
+    wb = w1 * pub + w2*h0
+
+    c = to_challenge([g, h0, wa, wb, pub,a,b])
+
+    rk = (w1 - c * k) % o
+    rm = (w2 - c * m) % o
 
     return (c, (rk, rm))
 
@@ -174,8 +210,14 @@ def verifyEnc(params, pub, Ciphertext, proof):
     (c, (rk, rm)) = proof
 
     ## YOUR CODE HERE:
+    k = c*a + rk*g
+    l = c*b + rk * pub + rm*h0
 
-    return ## YOUR RETURN HERE
+    c_verif = to_challenge([g, h0, k, l, pub,a,b])
+
+
+    return  c_verif == c
+
 
 
 #####################################################
@@ -199,6 +241,17 @@ def prove_x0eq10x1plus20(params, C, x0, x1, r):
     (G, g, (h0, h1, h2, h3), o) = params
 
     ## YOUR CODE HERE:
+    w1 = o.random()
+    w2 = o.random()
+
+    w = w1 * g + w2 * h1 + (10 * w2 * h0)
+
+    c = to_challenge([g, h0, h1, w])
+
+    r1 = (w1 - (c * r)) % o
+    r2 = (w2 - (c * x1)) % o
+
+    return (c, (r1, r2))
 
     return ## YOUR RETURN HERE
 
@@ -207,8 +260,13 @@ def verify_x0eq10x1plus20(params, C, proof):
     (G, g, (h0, h1, h2, h3), o) = params
 
     ## YOUR CODE HERE:
+    (c, (r1, r2)) = proof
 
-    return ## YOUR RETURN HERE
+    w = r1 * g + r2 * h1 + (10 * r2 * h0) + c * (C - (20 * h0))
+
+    c_verif = to_challenge([g, h0, h1, w])
+
+    return c == c_verif
 
 #####################################################
 # TASK 6 -- (OPTIONAL) Prove that a ciphertext is either 0 or 1
@@ -309,4 +367,3 @@ def test_prove_something():
     W_KY = ry * g + c2 * KY
     c = to_challenge([g, KX, KY, W_KX, W_KY])
     assert c % o == (c1 + c2) % o
-
