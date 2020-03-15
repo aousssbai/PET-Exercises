@@ -91,6 +91,19 @@ def credential_EncryptUserSecret(params, pub, priv):
     #                     pub = priv * g}
 
     ## TODO
+    wK = o.random()
+    wV = o.random()
+    wPriv = o.random()
+
+    WK = wK * g
+    WV = wK * pub + wV *g
+    WPriv = wPriv * g 
+
+    c = to_challenge([g,pub,a,b, WK, WV, WPriv])
+    
+    rk = (wK - c*k) % o
+    rv = (wV - c*v) % o
+    rpriv = (wPriv - c*priv) % o
 
     # Return the fresh v, the encryption of v and the proof.
     proof = (c, rk, rv, rpriv)
@@ -143,11 +156,19 @@ def credential_Issuing(params, pub, ciphertext, issuer_params):
     #     and x1b = (b * x1) mod o 
     
     # TODO 1 & 2
+    beta = o.random()
+    u = beta*g
+    X1b = beta * X1
+    x1b = (beta * x1) % o 
 
     # 3) The encrypted MAC is u, and an encrypted u_prime defined as 
     #    E( (b*x0) * g + (x1 * b * v) * g ) + E(0; r_prime)
     
     # TODO 3
+    r_prime = o.random()
+
+    new_a = r_prime * g + x1b * a
+    new_b = r_prime * pub + x1b * b + x0 * u
 
     ciphertext = new_a, new_b
 
@@ -162,6 +183,31 @@ def credential_Issuing(params, pub, ciphertext, issuer_params):
     #       Cx0 = x0 * g + x0_bar * h }
 
     ## TODO proof
+    wX1 = o.random()
+    wBeta = o.random()
+    wx1b = o.random()
+    wr_prime = o.random()
+    wx0 = o.random()
+    wx0_bar = o.random()
+
+    WX1 = wX1 * h
+    WX1b = wBeta * X1
+    WX1b2 = wx1b * h
+    Wu = wBeta * g
+    Wnew_a = wr_prime * g + wx1b * a
+    Wnew_b = wr_prime * pub + wx1b * b + wx0 * u
+    WCx0 = wx0 * g + wx0_bar*h
+
+    c = to_challenge([g, h, pub, a, b, X1, X1b, new_a, new_b, Cx0, WX1, WX1b, WX1b2, Wu, Wnew_a, Wnew_b, WCx0  ])
+
+    rx1 =  (wX1 - c*x1) % o
+    rbeta =  (wBeta - c*beta) % o
+    rx1b =  (wx1b - c*x1b) % o
+    rr_prime =  (wr_prime - c*r_prime) % o
+    rx0 =  (wx0 - c*x0) % o
+    rx0_bar =  (wx0_bar - c*x0_bar) % o
+
+    rs = [rx1, rbeta, rx1b, rr_prime, rx0, rx0_bar]
 
     proof = (c, rs, X1b) # Where rs are multiple responses
 
@@ -227,11 +273,18 @@ def credential_show(params, issuer_pub_params, u, u_prime, v):
     #    random alpha.
     
     # TODO 1
+    alpha = o.random()
+    u = alpha *  u
+    u_prime = alpha * u_prime
 
     # 2) Implement the "Show" protocol (p.9) for a single attribute v.
     #    Cv is a commitment to v and Cup is C_{u'} in the paper. 
 
     # TODO 2
+    z1 = o.random()
+    r = o.random()
+    Cv = v* u + z1*h
+    Cup = u_prime + (r * g)
 
     tag = (u, Cv, Cup)
 
@@ -242,6 +295,18 @@ def credential_show(params, issuer_pub_params, u, u_prime, v):
     #           V  = r * (-g) + z1 * X1 }
 
     ## TODO proof
+    wr = o.random()
+    wz1 = o.random()
+    wv = o.random()
+
+    WCv = wv * u + wz1 * h
+    WV = wr * (-g) + wz1 * X1
+
+    c = to_challenge([g,h,u,WCv, WV, Cv, X1, Cx0, Cup])
+
+    rr =  (wr - c*r) % o
+    rz1 =  (wz1 - c*z1) % o
+    rv = (wv - c*v) % o
 
     proof = (c, rr, rz1, rv)
     return tag, proof
@@ -261,6 +326,12 @@ def credential_show_verify(params, issuer_params, tag, proof):
     (u, Cv, Cup) = tag
 
     ## TODO
+    V = (x0*u + x1*Cv) - Cup #equation on P9 - use minus for divide by Cup
+
+    WCv_prime =  (rv * u + rz1 * h) + (c*Cv)
+    WV_prime = rr * (-g) + rz1 * X1 +  (c*V)
+
+    c_prime = to_challenge([g,h,u,WCv_prime, WV_prime, Cv, X1, Cx0, Cup])
 
     return c == c_prime
 
@@ -285,6 +356,32 @@ def credential_show_pseudonym(params, issuer_pub_params, u, u_prime, v, service_
     pseudonym = v * N
 
     ## TODO (use code from above and modify as necessary!)
+    z1 = o.random()
+    r = o.random()
+
+
+    Cv = v* u + z1*h
+    Cup = u_prime + (r * g)
+
+    tag = (u, Cv, Cup)
+
+   
+    wr = o.random()
+    wz1 = o.random()
+    wv = o.random()
+
+    WCv = wv * u + wz1 * h
+    WV = wr * (-g) + wz1 * X1
+    WPseudo = wv * N
+
+    c = to_challenge([g,h,u,WCv, WV, Cv, X1, Cx0, Cup, WPseudo, pseudonym])
+
+    rr =  (wr - c*r) % o
+    rz1 =  (wz1 - c*z1) % o
+    rv =  (wv - c*v) % o
+    rPseudo = (wv - c*v) % o
+
+    proof = (c, rr, rz1, rv, rPseudo)
 
     return pseudonym, tag, proof
 
@@ -305,6 +402,16 @@ def credential_show_verify_pseudonym(params, issuer_params, pseudonym, tag, proo
     ## Verify the correct Show protocol and the correctness of the pseudonym
 
     # TODO (use code from above and modify as necessary!)
+    (c, rr, rz1, rv, rPseudo) = proof
+    (u, Cv, Cup) = tag
+
+    V = (x0*u + x1*Cv) - Cup #equation on P9 - use minus for divide by Cup
+
+    WCv_prime =  (rv * u + rz1 * h) + (c*Cv)
+    WV_prime = rr * (-g) + rz1 * X1 +  (c*V)
+    WPseudo_prime = rPseudo * N +  (c*pseudonym)
+
+    c_prime = to_challenge([g,h,u,WCv_prime, WV_prime, Cv, X1, Cx0, Cup, WPseudo_prime, pseudonym])
 
     return c == c_prime
 

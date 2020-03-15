@@ -253,8 +253,6 @@ def prove_x0eq10x1plus20(params, C, x0, x1, r):
 
     return (c, (r1, r2))
 
-    return ## YOUR RETURN HERE
-
 def verify_x0eq10x1plus20(params, C, proof):
     """ Verify that proof of knowledge of C and x0 = 10 x1 + 20. """
     (G, g, (h0, h1, h2, h3), o) = params
